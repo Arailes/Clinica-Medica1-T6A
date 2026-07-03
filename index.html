@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MasteryQuiz - Clínica Médica (PR1 & PR2)</title>
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --success-fast: #4ade80;
+            --success-slow: #fb923c;
+            --danger: #f87171;
+            --border-color: #334155;
+            --pr2-color: #f97316;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        header { width: 100%; max-width: 800px; text-align: center; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        header h1 { font-size: 24px; color: var(--accent); margin-bottom: 5px; }
+        header p { color: var(--text-muted); font-size: 14px; }
+        .container { width: 100%; max-width: 800px; background-color: var(--bg-card); border-radius: 12px; padding: 25px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); border: 1px solid var(--border-color); }
+        .screen { display: none; }
+        .screen.active { display: block; }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-top: 15px; }
+        .btn-general { grid-column: 1 / -1; background: linear-gradient(135deg, #0284c7, #0369a1); color: white; font-weight: bold; font-size: 16px; padding: 16px; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); }
+        .btn-general:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-pr2 { background: linear-gradient(135deg, #ea580c, #c2410c); }
+        .btn-module { background-color: #1e293b; border: 1px solid var(--border-color); color: var(--text-main); padding: 14px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+        .btn-module:hover { background-color: #273549; border-color: var(--accent); transform: translateY(-1px); }
+        .btn-module.pr2-mod:hover { border-color: var(--pr2-color); }
+        .btn-module span.badge { font-size: 11px; color: var(--accent); font-weight: 600; text-transform: uppercase; }
+        .quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
+        .status-badge { background-color: #0f172a; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500; border: 1px solid var(--border-color); }
+        .live-timer { font-size: 16px; font-weight: bold; font-family: monospace; color: var(--text-main); background: #334155; padding: 4px 10px; border-radius: 6px; }
+        .live-timer.warning { color: var(--success-slow); animation: pulse 1s infinite alternate; }
+        @keyframes pulse { from { opacity: 0.8; } to { opacity: 1; } }
+        .progress-container { margin-bottom: 20px; }
+        .progress-text { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+        .progress-bar-outer { background-color: #0f172a; height: 8px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); }
+        .progress-bar-inner { background: linear-gradient(90deg, var(--accent), var(--success-fast)); height: 100%; width: 0%; transition: width 0.3s ease; }
+        .question-box { margin-bottom: 25px; }
+        .question-box h3 { font-size: 16px; line-height: 1.6; font-weight: 500; }
+        .options-list { display: flex; flex-direction: column; gap: 10px; }
+        .option-item { background-color: #0f172a; border: 1px solid var(--border-color); color: var(--text-main); padding: 14px 18px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s; font-size: 14px; line-height: 1.5; display: flex; align-items: flex-start; gap: 10px; }
+        .option-item:hover { background-color: #1e293b; border-color: var(--accent); }
+        .option-letter { font-weight: bold; color: var(--accent); min-width: 20px; }
+        .feedback-box { margin-top: 20px; padding: 20px; border-radius: 8px; display: none; border: 1px solid transparent; }
+        .feedback-box.correct-fast { display: block; background-color: rgba(74, 222, 128, 0.1); border-color: var(--success-fast); }
+        .feedback-box.correct-slow { display: block; background-color: rgba(251, 146, 60, 0.1); border-color: var(--success-slow); }
+        .feedback-box.incorrect { display: block; background-color: rgba(248, 113, 113, 0.1); border-color: var(--danger); }
+        .feedback-title { font-weight: bold; font-size: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .feedback-box.correct-fast .feedback-title { color: var(--success-fast); }
+        .feedback-box.correct-slow .feedback-title { color: var(--success-slow); }
+        .feedback-box.incorrect .feedback-title { color: var(--danger); }
+        .trap-box { margin-top: 12px; background-color: #0f172a; padding: 12px; border-radius: 6px; font-size: 13px; border-left: 4px solid var(--accent); }
+        .trap-title { font-weight: bold; color: var(--accent); margin-bottom: 4px; font-size: 12px; text-transform: uppercase; }
+        .btn-next { margin-top: 20px; width: 100%; background-color: var(--accent); color: #0f172a; font-weight: bold; font-size: 15px; padding: 14px; border-radius: 8px; border: none; cursor: pointer; transition: background-color 0.2s; }
+        .btn-next:hover { background-color: var(--accent-hover); }
+        .btn-quit { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+        .btn-quit:hover { background-color: rgba(248, 113, 113, 0.1); color: var(--danger); border-color: var(--danger); }
+        .summary-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin: 20px 0; }
+        .stat-card { background-color: #0f172a; border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; text-align: center; }
+        .stat-val { font-size: 24px; font-weight: bold; color: var(--accent); margin-top: 5px; }
+        .congratulations { text-align: center; margin-bottom: 20px; }
+        .congratulations h2 { color: var(--success-fast); margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>MasteryQuiz: Clínica Médica</h1>
+        <p>Sistema Inteligente de Retenção e Ciclagem de Questões</p>
+    </header>
+    <div class="container">
+        <!-- HOME SCREEN -->
+        <div id="screen-home" class="screen active">
+            <h2 style="font-size: 18px; margin-bottom: 10px; font-weight: 500;">Escolha o Modo de Estudo:</h2>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                As questões erradas ou respondidas em mais de 1 minuto voltam ao final do banco, ciclando até você dominá-las por completo.
+            </p>
+            
+            <div style="margin-bottom: 35px;">
+                <h3 style="color: var(--accent); margin-bottom: 5px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">PR1 - Clínica Médica I</h3>
+                <div class="menu-grid">
+                    <button class="btn-general" onclick="startQuiz('PR1_ALL')">Simulado Geral PR1 (Todas as Questões)</button>
+                    <div id="modules-container-pr1" style="display: contents;"></div>
+                </div>
+            </div>
+
+            <div>
+                <h3 style="color: var(--pr2-color); margin-bottom: 5px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">PR2 - Clínica Médica II</h3>
+                <div class="menu-grid">
+                    <button class="btn-general btn-pr2" onclick="startQuiz('PR2_ALL')">Simulado Geral PR2 (Todas as Questões)</button>
+                    <div id="modules-container-pr2" style="display: contents;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUIZ SCREEN -->
+        <div id="screen-quiz" class="screen">
+            <div class="quiz-header">
+                <div><span id="quiz-module-badge" class="status-badge">Módulo</span></div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="live-timer" class="live-timer">00:00</span>
+                    <button class="btn-quit" onclick="quitQuiz()">Abandonar</button>
+                </div>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-text">
+                    <span id="progress-counts">Domínio: 0/10</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar-outer"><div id="progress-bar" class="progress-bar-inner"></div></div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 5px;">
+                    <span id="stats-remaining">Fila de repetição: 0</span>
+                    <span id="stats-cycles">Erros/Demoradas nesta sessão: 0</span>
+                </div>
+            </div>
+
+            <div class="question-box"><h3 id="question-text">Carregando enunciado...</h3></div>
+            <div id="options-container" class="options-list"></div>
+
+            <!-- FEEDBACK PANEL -->
+            <div id="feedback-panel" class="feedback-box">
+                <div id="feedback-title" class="feedback-title">Resultado</div>
+                <p id="feedback-explanation" style="font-size: 14px; line-height: 1.5;"></p>
+                <div class="trap-box">
+                    <div class="trap-title" id="trap-title">Pegadinha / Comentário</div>
+                    <div id="feedback-trap"></div>
+                </div>
+                <button class="btn-next" onclick="nextQuestion()">Avançar na Fila de Questões</button>
+            </div>
+        </div>
+
+        <!-- SUMMARY SCREEN -->
+        <div id="screen-summary" class="screen">
+            <div class="congratulations">
+                <h2>🏆 Módulo Concluído!</h2>
+                <p>Você atingiu o domínio completo respondendo a todas as questões de forma correta e rápida.</p>
+            </div>
+            <div class="summary-stats">
+                <div class="stat-card"><div>Total de Erros Cometidos</div><div id="summary-mistakes" class="stat-val">0</div></div>
+                <div class="stat-card"><div>Respostas Lentas (+1min)</div><div id="summary-slows" class="stat-val">0</div></div>
+            </div>
+            <button class="btn-general" onclick="goToHome()">Voltar ao Menu Principal</button>
+        </div>
+    </div>
+
+    <script>
+        const questionBank = REPLACE_QUESTIONS_HERE;
+        const modulesList = REPLACE_MODULES_HERE;
+
+        let activeQueue = [];
+        let initialQueueSize = 0;
+        let masteredCount = 0;
+        let sessionMistakes = 0;
+        let sessionSlows = 0;
+        
+        let currentQuestion = null;
+        let questionStartTime = 0;
+        let timerInterval = null;
+        let timeElapsedSeconds = 0;
+        let isAnswered = false;
+
+        function initMenu() {
+            const containerPR1 = document.getElementById('modules-container-pr1');
+            const containerPR2 = document.getElementById('modules-container-pr2');
+            
+            modulesList.forEach(mod => {
+                const qCount = questionBank.filter(q => q.module_id === mod.id).length;
+                const btn = document.createElement('button');
+                btn.className = 'btn-module ' + (mod.course === 'PR2' ? 'pr2-mod' : '');
+                btn.onclick = () => startQuiz(mod.id);
+                
+                const badgeColor = mod.course === 'PR2' ? 'var(--pr2-color)' : 'var(--accent)';
+                btn.innerHTML = `
+                    <span class="badge" style="color: ${badgeColor};">${mod.course} - Módulo ${mod.id}</span>
+                    <strong style="color: var(--text-main); font-weight: 600; margin-top: 2px;">${mod.name}</strong>
+                    <span style="color: var(--text-muted); font-size: 12px; margin-top: 2px;">${qCount} questões</span>
+                `;
+                
+                if (mod.course === 'PR1') {
+                    containerPR1.appendChild(btn);
+                } else {
+                    containerPR2.appendChild(btn);
+                }
+            });
+        }
+
+        function startQuiz(mode) {
+            if (mode === 'PR1_ALL') {
+                activeQueue = questionBank.filter(q => q.course === 'PR1');
+            } else if (mode === 'PR2_ALL') {
+                activeQueue = questionBank.filter(q => q.course === 'PR2');
+            } else {
+                activeQueue = questionBank.filter(q => q.module_id === parseInt(mode));
+            }
+
+            activeQueue.sort(() => Math.random() - 0.5);
+            initialQueueSize = activeQueue.length;
+            masteredCount = 0;
+            sessionMistakes = 0;
+            sessionSlows = 0;
+
+            switchScreen('screen-quiz');
+            loadNextQuestionInQueue();
+        }
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function loadNextQuestionInQueue() {
+            if (activeQueue.length === 0) {
+                finishQuiz();
+                return;
+            }
+
+            isAnswered = false;
+            document.getElementById('feedback-panel').className = 'feedback-box';
+            currentQuestion = activeQueue[0];
+
+            document.getElementById('quiz-module-badge').innerText = `${currentQuestion.course} - ${currentQuestion.module_name} (Q${currentQuestion.num})`;
+            
+            if (currentQuestion.course === 'PR2') {
+                document.getElementById('quiz-module-badge').style.borderColor = 'var(--pr2-color)';
+                document.getElementById('quiz-module-badge').style.color = 'var(--pr2-color)';
+            } else {
+                document.getElementById('quiz-module-badge').style.borderColor = 'var(--border-color)';
+                document.getElementById('quiz-module-badge').style.color = 'var(--text-main)';
+            }
+            
+            updateProgressUI();
+            document.getElementById('question-text').innerText = currentQuestion.statement;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            Object.entries(currentQuestion.options).forEach(([letter, text]) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-item';
+                btn.id = `option-${letter}`;
+                btn.onclick = () => selectOption(letter);
+                
+                const letterColor = currentQuestion.course === 'PR2' ? 'var(--pr2-color)' : 'var(--accent)';
+                btn.innerHTML = `<span class="option-letter" style="color: ${letterColor};">${letter})</span> <span>${text}</span>`;
+                optionsContainer.appendChild(btn);
+            });
+
+            timeElapsedSeconds = 0;
+            document.getElementById('live-timer').innerText = "00:00";
+            document.getElementById('live-timer').className = "live-timer";
+            questionStartTime = Date.now();
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeElapsedSeconds = Math.floor((Date.now() - questionStartTime) / 1000);
+                const mins = String(Math.floor(timeElapsedSeconds / 60)).padStart(2, '0');
+                const secs = String(timeElapsedSeconds % 60).padStart(2, '0');
+                const timerEl = document.getElementById('live-timer');
+                timerEl.innerText = `${mins}:${secs}`;
+                
+                if (timeElapsedSeconds >= 60) {
+                    timerEl.classList.add('warning');
+                }
+            }, 1000);
+        }
+
+        function selectOption(selectedLetter) {
+            if (isAnswered) return;
+            isAnswered = true;
+            clearInterval(timerInterval);
+
+            const correctLetter = currentQuestion.answer;
+            const feedbackPanel = document.getElementById('feedback-panel');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const feedbackExplanation = document.getElementById('feedback-explanation');
+            const feedbackTrap = document.getElementById('feedback-trap');
+
+            Object.keys(currentQuestion.options).forEach(letter => {
+                const el = document.getElementById(`option-${letter}`);
+                if (letter === correctLetter) {
+                    el.style.borderColor = 'var(--success-fast)';
+                    el.style.backgroundColor = 'rgba(74, 222, 128, 0.15)';
+                } else if (letter === selectedLetter) {
+                    el.style.borderColor = 'var(--danger)';
+                    el.style.backgroundColor = 'rgba(248, 113, 113, 0.15)';
+                }
+            });
+
+            const isCorrect = (selectedLetter === correctLetter);
+            const isSlow = (timeElapsedSeconds >= 60);
+            activeQueue.shift();
+
+            if (isCorrect && !isSlow) {
+                masteredCount++;
+                feedbackPanel.className = 'feedback-box correct-fast';
+                feedbackTitle.innerHTML = '⚡ Excelente! Resposta Correta e Rápida';
+                feedbackExplanation.innerHTML = `Você respondeu corretamente em <strong>${timeElapsedSeconds}s</strong>. Esta questão saiu do banco ativo!`;
+            } else if (isCorrect && isSlow) {
+                sessionSlows++;
+                activeQueue.push(currentQuestion);
+                feedbackPanel.className = 'feedback-box correct-slow';
+                feedbackTitle.innerHTML = '⏳ Correto, porém demorado (+1min)';
+                feedbackExplanation.innerHTML = `Gabarito correto! No entanto, você levou <strong>${timeElapsedSeconds}s</strong>. Para fixação definitiva, a questão foi movida para o final do banco.`;
+            } else {
+                sessionMistakes++;
+                activeQueue.push(currentQuestion);
+                feedbackPanel.className = 'feedback-box incorrect';
+                feedbackTitle.innerHTML = '❌ Resposta Incorreta';
+                feedbackExplanation.innerHTML = `Alternativa assinalada incorreta. O gabarito oficial é <strong>${correctLetter}</strong>. A questão retornou ao final da fila para nova tentativa cíclica.`;
+            }
+
+            document.getElementById('trap-title').style.color = currentQuestion.course === 'PR2' ? 'var(--pr2-color)' : 'var(--accent)';
+            document.querySelector('.trap-box').style.borderLeftColor = currentQuestion.course === 'PR2' ? 'var(--pr2-color)' : 'var(--accent)';
+            feedbackTrap.innerText = currentQuestion.commentary || "Gabarito: " + correctLetter;
+        }
+
+        function nextQuestion() {
+            loadNextQuestionInQueue();
+        }
+
+        function updateProgressUI() {
+            const totalActiveNow = activeQueue.length;
+            document.getElementById('progress-counts').innerText = `Domínio Realizado: ${masteredCount}/${initialQueueSize}`;
+            
+            const pct = Math.round((masteredCount / initialQueueSize) * 100);
+            document.getElementById('progress-percent').innerText = `${pct}%`;
+            
+            const barColor = currentQuestion && currentQuestion.course === 'PR2' ? 
+                'linear-gradient(90deg, var(--pr2-color), var(--success-fast))' : 
+                'linear-gradient(90deg, var(--accent), var(--success-fast))';
+                
+            document.getElementById('progress-bar').style.background = barColor;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+
+            document.getElementById('stats-remaining').innerText = `Fila de repetição: ${totalActiveNow} restante(s)`;
+            document.getElementById('stats-cycles').innerText = `Erros: ${sessionMistakes} | Lentas: ${sessionSlows}`;
+        }
+
+        function quitQuiz() {
+            if (confirm("Deseja mesmo abandonar o quiz atual e retornar ao menu principal? Seu progresso nesta sessão será reiniciado.")) {
+                clearInterval(timerInterval);
+                goToHome();
+            }
+        }
+
+        function finishQuiz() {
+            clearInterval(timerInterval);
+            switchScreen('screen-summary');
+            document.getElementById('summary-mistakes').innerText = sessionMistakes;
+            document.getElementById('summary-slows').innerText = sessionSlows;
+        }
+
+        function goToHome() {
+            switchScreen('screen-home');
+        }
+
+        window.onload = () => {
+            initMenu();
+        };
+    </script>
+</body>
+</html>
